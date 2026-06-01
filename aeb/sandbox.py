@@ -49,12 +49,12 @@ class DockerSandbox:
         try:
             p = subprocess.run(
                 ["docker", "exec", self.name, "bash", "-lc", command],
-                capture_output=True, text=True, timeout=timeout,
+                capture_output=True, text=True, errors="replace", timeout=timeout,
             )
             return CmdResult(p.stdout, p.stderr, p.returncode, False)
         except subprocess.TimeoutExpired as e:
-            out = (e.stdout or b"").decode() if isinstance(e.stdout, bytes) else (e.stdout or "")
-            err = (e.stderr or b"").decode() if isinstance(e.stderr, bytes) else (e.stderr or "")
+            out = (e.stdout or b"").decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
+            err = (e.stderr or b"").decode(errors="replace") if isinstance(e.stderr, bytes) else (e.stderr or "")
             return CmdResult(out, err + f"\n[command timed out after {timeout}s]", 124, True)
 
     def write_file(self, path: str, content: str) -> None:
