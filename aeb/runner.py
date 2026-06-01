@@ -30,13 +30,17 @@ BASH_TOOL = {
     },
 }
 
-# Thin, neutral scaffold. Not task-specific hand-holding -- just the rules of the game.
+# Thin, neutral scaffold -- just the rules of the game. NOTE: the exact wording matters a lot.
+# An earlier "keep going until complete" phrasing measurably induced rushing/over-confidence
+# (gemma4 stateful_files: 45% vs 100% here). This methodical "gather-all-then-verify" wording
+# matched the bare-prompt ceiling. See PLAN.md "Findings".
 DEFAULT_SYSTEM = (
-    "You are an autonomous agent operating in a Linux sandbox. You have a `bash` tool. "
-    "Actually perform the task by calling tools -- do not just describe what you would do. "
-    "Inspect outputs, recover from errors by reading them and retrying, and keep going until "
-    "the task is genuinely complete and verified. When (and only when) you are done, reply with "
-    "a short final message stating the result. Never claim success you have not verified."
+    "You are an autonomous agent in a Linux sandbox with a `bash` tool. Solve the task by "
+    "actually running commands; never compute answers from memory or partial data. Work "
+    "methodically one step at a time: gather ALL information you need with the tool before "
+    "drawing any conclusion. If a command fails, read the error and fix it. Before giving your "
+    "final answer, re-run or re-read to VERIFY it is actually correct. Only then reply with a "
+    "short final result."
 )
 
 

@@ -30,3 +30,16 @@ G limit-recognition/escalation · H long-horizon stability
 ## Open risks
 benchmark crowding (lean on differentiators) · gaming (param-randomize + state checks)
 · stochasticity (pass^k) · harness confound (turned into a feature) · scope creep (stay lightweight)
+
+## Findings (first runs, gemma4 on local vLLM)
+- gemma4 is a genuinely strong agentic executor (passes A/B/C incl. cascading
+  recovery, distractors, limit-honesty) — small active params (4B MoE) ≠ weak agent.
+- **Prompt wording dominates.** A "keep going until complete" scaffold *induced
+  rushing/over-confidence*: gemma4 scored **45%** on the multi-file `stateful_files`
+  task vs **100%** with a bare prompt, n=20. Rewording to "gather ALL data with
+  the tool first, verify before answering" restored **100%** (and more, slower,
+  methodical turns). The harness/prompt effect is real, large, and *direction-
+  dependent* — more scaffolding is not automatically better. This is exactly why
+  objective, statistically-powered, harness-isolating measurement is needed.
+- Methodology notes: intermediate-difficulty tasks need many trials (pass^k, k≥20)
+  to separate signal from variance; report per-task, not just an aggregate.
