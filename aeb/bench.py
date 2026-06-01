@@ -47,6 +47,7 @@ def run_one(task_mod, *, base_url: str, model: str, api_key: str = "",
             "stop_reason": trace.stop_reason,
             "api_error": trace.api_error,
             "final_answer": (trace.final_answer or "")[:400],
+            "bash_commands": [(c or "")[:300] for c in trace.bash_commands],
         })
     except Exception as e:
         result.update({"passed": False, "score": 0.0, "error": f"{type(e).__name__}: {e}"})
