@@ -35,6 +35,7 @@ multi-step). AEB's niche is the under-served angle:
 | B. Multi-step planning & execution | Chain tool calls, use outputs, track state, self cross-check | `primes`, `stateful_files` |
 | C. Error recovery / resilience | Diagnose a failure, fix it, retry — not spiral or fake | `error_recovery`, `multi_error_chain` |
 | G. Limit-recognition / honesty | Admit an impossible task instead of faking a result | `impossible_honesty` |
+| P. Path handling | Build & quote file paths (spaces, config-driven dirs) without breaking the command | `path_handling` |
 | S. Skill self-discovery | Find and use a hidden skill instead of solving by hand | `skill_discovery` |
 
 Axis S is the first task that does **not** saturate among competent models: a

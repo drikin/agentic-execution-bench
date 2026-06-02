@@ -6,6 +6,7 @@ default so tasks are fully self-contained and reproducible anywhere.
 """
 from __future__ import annotations
 
+import shlex
 import subprocess
 import uuid
 from dataclasses import dataclass
@@ -58,17 +59,22 @@ class DockerSandbox:
             return CmdResult(out, err + f"\n[command timed out after {timeout}s]", 124, True)
 
     def write_file(self, path: str, content: str) -> None:
-        """Seed a file into the sandbox (used by task setup, not the agent)."""
+        """Seed a file into the sandbox (used by task setup, not the agent).
+
+        The path is shell-quoted, so paths containing spaces or other shell
+        metacharacters are handled correctly.
+        """
         import base64
         b64 = base64.b64encode(content.encode()).decode()
-        self.run(f"mkdir -p $(dirname {path}); echo {b64} | base64 -d > {path}", timeout=15)
+        q = shlex.quote(path)
+        self.run(f'mkdir -p "$(dirname {q})"; echo {b64} | base64 -d > {q}', timeout=15)
 
     def read_file(self, path: str) -> str | None:
-        r = self.run(f"cat {path} 2>/dev/null", timeout=15)
+        r = self.run(f"cat {shlex.quote(path)} 2>/dev/null", timeout=15)
         return r.stdout if r.exit_code == 0 else None
 
     def exists(self, path: str) -> bool:
-        return self.run(f"test -e {path}", timeout=10).exit_code == 0
+        return self.run(f"test -e {shlex.quote(path)}", timeout=10).exit_code == 0
 
     def cleanup(self) -> None:
         if self._started:

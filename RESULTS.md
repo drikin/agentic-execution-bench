@@ -82,6 +82,31 @@ gemma4-26B-A4B, n=10: with V2 the core A/B/C/G tasks stay 1.00 while
 the production Hermes agent's persona file with no regression on the saturated
 tasks.
 
+## Axis P — file path handling (`path_handling`)
+
+A practical failure mode of weaker agentic models: they mangle file paths and the
+command silently breaks. The task plants three classic traps — the program, the
+input, and the (config-supplied) output directory all live in directories whose
+names contain a **space** — and requires running the provided program on the real
+input and routing stdout to the exactly-correct, space-containing path. The
+transform is a salted SHA-256, so the value can't be guessed; success is one
+objective file check.
+
+Validated deterministically (no model): a fully-quoted invocation passes; an
+unquoted path or an unquoted redirect target (`> /work/processed output/...` →
+*ambiguous redirect*) fails. So the verifier catches real path mistakes.
+
+| Model | pass^k | n | Note |
+|---|---|---|---|
+| gemma4-26B-A4B | 1.00 | 5 | quotes every path cleanly; competent models handle this |
+
+This skill saturates earlier than skill self-discovery — a reasonably capable
+model quotes paths reflexively. Its discrimination is expected among **weaker /
+more aggressively quantized** models (a model-swap sweep is pending, same method
+as Axis S). Note also a framework bug this task surfaced: the sandbox's own
+`write_file`/`read_file`/`exists` helpers did not shell-quote paths; now fixed
+with `shlex.quote`, so any task may use paths with spaces.
+
 ## Reproducing
 
 ```bash
