@@ -98,6 +98,11 @@ python -m aeb run \
 出力：タスクごとの PASS/FAIL 表、総合 **Agentic Execution Score**、pass^k、
 talk-vs-do（口だけ）件数、そして `results/` 以下に結果 JSON。
 
+ローカルの vLLM/Ollama でも、ホスティング API でも動きます。`max_tokens` や
+独自の `temperature` を拒否する新しめのホスティングモデル（gpt-5.x、o系など）にも
+自動対応：ランナーが 400 を検知して `max_completion_tokens` へ切り替え（temperature も
+落とす）、そのモデル向けに学習結果をキャッシュします。
+
 ## 仕組み
 
 ```

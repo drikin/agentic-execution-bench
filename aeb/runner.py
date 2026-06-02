@@ -61,16 +61,56 @@ class RunTrace:
     api_error: str = ""
 
 
+# Per-model API quirks discovered at runtime, so we adapt once and reuse.
+# Keeps AEB working across "any OpenAI-compatible endpoint": local vLLM/Ollama
+# take `max_tokens` + a custom temperature, while newer hosted models (gpt-5.x,
+# o-series, ...) require `max_completion_tokens` and only the default temperature.
+_MODEL_QUIRKS: dict[str, set[str]] = {}
+_MAX_OUTPUT_TOKENS = 2048
+
+
+def _build_body(model, messages, tools, quirks):
+    body = {"model": model, "messages": messages, "tools": tools, "tool_choice": "auto"}
+    if "use_max_completion_tokens" in quirks:
+        body["max_completion_tokens"] = _MAX_OUTPUT_TOKENS
+    else:
+        body["max_tokens"] = _MAX_OUTPUT_TOKENS
+    if "no_temperature" not in quirks:
+        body["temperature"] = 0.3
+    return body
+
+
+def _adapt_quirks(resp_text, quirks):
+    """Inspect a 400 body for unsupported-parameter errors and learn the fix.
+    Returns True if a new adaptation was applied (so the caller should retry)."""
+    t = (resp_text or "").lower()
+    changed = False
+    if ("max_completion_tokens" in t and "max_tokens" in t
+            and "use_max_completion_tokens" not in quirks):
+        quirks.add("use_max_completion_tokens"); changed = True
+    if ("temperature" in t and "no_temperature" not in quirks
+            and any(s in t for s in ("does not support", "only the default",
+                                     "unsupported value", "is not supported",
+                                     "only supports"))):
+        quirks.add("no_temperature"); changed = True
+    return changed
+
+
 def _chat(base_url, model, messages, tools, api_key, extra_body):
     url = base_url.rstrip("/") + "/chat/completions"
     headers = {"Content-Type": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
-    body = {"model": model, "messages": messages, "tools": tools,
-            "tool_choice": "auto", "temperature": 0.3, "max_tokens": 2048}
-    if extra_body:
-        body.update(extra_body)
-    r = requests.post(url, headers=headers, json=body, timeout=180)
+    quirks = _MODEL_QUIRKS.setdefault(model, set())
+    r = None
+    for _ in range(4):  # adapt to at most a couple of unsupported-param errors, then give up
+        body = _build_body(model, messages, tools, quirks)
+        if extra_body:
+            body.update(extra_body)
+        r = requests.post(url, headers=headers, json=body, timeout=180)
+        if r.status_code == 400 and _adapt_quirks(r.text, quirks):
+            continue  # learned a fix (e.g. max_tokens -> max_completion_tokens); retry
+        break
     r.raise_for_status()
     return r.json()
 

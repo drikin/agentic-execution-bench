@@ -99,6 +99,11 @@ python -m aeb run \
 Output: a per-task PASS/FAIL table, a composite **Agentic Execution Score**,
 pass^k, talk-vs-do counts, and a results JSON under `results/`.
 
+Works against local vLLM/Ollama *and* hosted APIs. Newer hosted models (gpt-5.x,
+o-series) that reject `max_tokens`/custom `temperature` are handled
+automatically: the runner detects the 400, switches to `max_completion_tokens`
+(and drops temperature) for that model, and caches the fix.
+
 ## How it works
 
 ```
