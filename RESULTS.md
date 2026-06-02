@@ -111,14 +111,27 @@ unquoted path or an unquoted redirect target (`> /work/processed output/...` →
 | Model | pass^k | n | Note |
 |---|---|---|---|
 | gpt-5.5 *(hosted, reasoning)* | 1.00 | 3 | clean, ~3 turns |
-| gemma4-26B-A4B | 1.00 | 5 | quotes every path cleanly; competent models handle this |
+| Albond Qwen3.5-122B-A10B | 1.00 | 5 | |
+| Qwen3.6-27B dense | 1.00 | 5 | |
+| Qwen3.6-35B-A3B | 1.00 | 5 | |
+| MiniMax-M2.7-172B-A10B | 1.00 | 5 | 7.8 turns — works harder, still lands it |
+| Coder-Next | 1.00 | 5 | |
+| gemma4-26B-A4B | 1.00 | 5 | |
 
-This skill saturates earlier than skill self-discovery — a reasonably capable
-model quotes paths reflexively. Its discrimination is expected among **weaker /
-more aggressively quantized** models (a model-swap sweep is pending, same method
-as Axis S). Note also a framework bug this task surfaced: the sandbox's own
-`write_file`/`read_file`/`exists` helpers did not shell-quote paths; now fixed
-with `shlex.quote`, so any task may use paths with spaces.
+**Honest negative result: at this difficulty, path handling is a *solved*,
+saturated skill — it does not discriminate.** Every model swept scores 1.00,
+*including* MiniMax and Coder-Next, which score **0.00** on skill self-discovery.
+So the two are independent abilities: failing to *find* a tool is not the same as
+failing to *handle a path*. Current instruction-tuned models — even ones that
+collapse on self-discovery — quote spaces and build paths from config reflexively.
+The hypothesized "weak models mangle paths" failure does not reproduce here. To
+make Axis P a discriminator would need harder traps (tilde non-expansion,
+relative paths from the wrong CWD, URL path joining) or much older/smaller models;
+as-is it is a table-stakes check, like the saturated A/B/C/G core.
+
+(This task did earn its keep in one way: it surfaced a framework bug — the
+sandbox's own `write_file`/`read_file`/`exists` helpers did not shell-quote
+paths, now fixed with `shlex.quote`.)
 
 ## Reproducing
 
