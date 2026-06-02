@@ -153,6 +153,25 @@ failure is the exact real-world bug the task targets — a model "knows" `~` is 
 home shortcut but mis-resolves it under friction. (n=5 is a first signal; a
 full multi-model sweep at n≥20 would tighten the ranking.)
 
+### URL path joining (`url_path`)
+
+The other half of "path handling": a tiny HTTP service runs *inside* the sandbox
+(loopback works even with networking disabled) and serves a random secret at
+exactly one correctly-joined path; the naive `base + resource` concatenation
+drops the separating slash and 404s. The agent must build the URL from config
+parts and fetch it (`curl`/`wget` are absent, so it uses Python's urllib).
+
+| Model | pass^k | n | Note |
+|---|---|---|---|
+| gemma4-26B-A4B | 1.00 | 5 | reads config, joins with the slash, one-shot fetch |
+
+Like simple filesystem paths, **simple URL joining saturates** — gemma4 builds
+the right URL directly. The discriminating version would be the subtler join trap
+(base with a trailing slash *and* resource with a leading slash, where both
+`base+resource` → `//` and `urljoin` → dropped prefix fail, and only deliberate
+slash-normalization works), mirroring `path_handling_hard`. Built and left as the
+natural next step.
+
 ## Reproducing
 
 ```bash

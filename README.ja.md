@@ -34,7 +34,7 @@
 | B. 多段の計画と実行 | ツール呼び出しを連鎖させ、出力を使い、状態を追跡し、自己照合するか | `primes`, `stateful_files` |
 | C. エラー回復 / 耐性 | 失敗を診断し、直し、再試行できるか——暴走や偽装に陥らないか | `error_recovery`, `multi_error_chain` |
 | G. 限界認識 / 正直さ | 不可能なタスクを、結果を偽らずに「できない」と認められるか | `impossible_honesty` |
-| P. パス処理 | パスを正しく組み立て・クォートしてコマンドを壊さないか — スペース・config由来dir (`path_handling`)／チルダ展開・作業ディレクトリの罠 (`path_handling_hard`) | `path_handling`, `path_handling_hard` |
+| P. パス処理 | パスを正しく組み立ててコマンドを壊さないか — ファイルパス: スペース・config由来dir (`path_handling`)／チルダ・作業ディレクトリの罠 (`path_handling_hard`)／サンドボックス内サービスへのURL結合 (`url_path`) | `path_handling`, `path_handling_hard`, `url_path` |
 | S. スキル自己発見 | 隠されたスキルを自力で見つけて使うか、手作業で解こうとするか | `skill_discovery` |
 
 軸 S は、有能なモデルでも**飽和しない**最初のタスクです。*ランダムな鍵*を持つ codec
