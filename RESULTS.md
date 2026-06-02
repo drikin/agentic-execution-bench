@@ -133,6 +133,26 @@ as-is it is a table-stakes check, like the saturated A/B/C/G core.
 sandbox's own `write_file`/`read_file`/`exists` helpers did not shell-quote
 paths, now fixed with `shlex.quote`.)
 
+### Hard variant (`path_handling_hard`) — it *does* discriminate
+
+Adding the two traps that actually bite turns Axis P back into a discriminator:
+
+1. **tilde non-expansion** — the output dir comes from config as `~/out area <rnd>`
+   (tilde + space + a *random* tag so it can't be hard-coded). Pulled into a shell
+   variable, `~` is **not** expanded; the agent must resolve it to `$HOME` itself.
+2. **wrong working directory** — the program reads a sibling file by a relative
+   path, so it only works when run with its own directory as CWD.
+
+| Model | pass^k | n | Note |
+|---|---|---|---|
+| Albond Qwen3.5-122B-A10B | **1.00** | 5 | handles `~`+CWD correctly (9.2 turns — works for it) |
+| gemma4-26B-A4B | **0.80** | 5 | one trial **resolved `~` to `/work` instead of `$HOME`** and wrote the result to the wrong place |
+
+The easy variant is 1.00 for both; the hard variant separates them. gemma4's
+failure is the exact real-world bug the task targets — a model "knows" `~` is a
+home shortcut but mis-resolves it under friction. (n=5 is a first signal; a
+full multi-model sweep at n≥20 would tighten the ranking.)
+
 ## Reproducing
 
 ```bash
