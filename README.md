@@ -80,6 +80,11 @@ A single capability-first sentence lifts a 0.00 model to 0.95; the same sentence
 *hurts* nothing and a naive "persevere" prompt *induces* over-confidence. This is
 why AEB isolates the harness with `--system`.
 
+➡️ **Want to apply this to your own agent?** [`PROMPTING.md`](PROMPTING.md) has
+the exact lines (EN + JA) to drop into a `SOUL.md`/system prompt to raise
+execution ability — including the one we shipped into a live agent — plus the
+anti-pattern to avoid.
+
 ## Quick start
 
 ```bash
