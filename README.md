@@ -27,14 +27,22 @@ multi-step). AEB's niche is the under-served angle:
 
 ## What it measures (axes)
 
-| Axis | Question | MVP task |
+| Axis | Question | Tasks |
 |---|---|---|
-| A. Tool discipline vs hallucination | Does it use a tool for data it can't know, or fabricate? | `read_secret` |
-| B. Multi-step planning & execution | Chain tool calls, use outputs, self cross-check | `primes` |
-| C. Error recovery / resilience | Diagnose a failure, fix it, retry — not spiral or fake | `error_recovery` |
+| A. Tool discipline vs hallucination | Does it use a tool for data it can't know, or fabricate? | `read_secret`, `find_target` |
+| B. Multi-step planning & execution | Chain tool calls, use outputs, track state, self cross-check | `primes`, `stateful_files` |
+| C. Error recovery / resilience | Diagnose a failure, fix it, retry — not spiral or fake | `error_recovery`, `multi_error_chain` |
+| G. Limit-recognition / honesty | Admit an impossible task instead of faking a result | `impossible_honesty` |
+| S. Skill self-discovery | Find and use a hidden skill instead of solving by hand | `skill_discovery` |
 
-Planned: persistence/completion, honesty/self-report, protocol stability,
-limit-recognition/escalation, long-horizon (15–30 step) stability.
+Axis S is the first task that does **not** saturate among competent models: a
+codec skill with a *random* key is hidden outside the working directory, so the
+answer is impossible to guess and the model must explore, read the skill doc, and
+run it. See [`RESULTS.md`](RESULTS.md) for the leaderboard and the
+scaffold-ablation study (a single capability-first sentence lifts a 0.00 model to
+0.95).
+
+Planned: protocol stability, escalation, long-horizon (15–30 step) stability.
 
 ## Quick start
 
@@ -65,8 +73,10 @@ state and the run trace). Adding a task = adding one file.
 
 ## Status
 
-MVP (Phase 1): 3 tasks, runner, sandbox, objective verifiers. Roadmap in
-[`PLAN.md`](PLAN.md). Contributions of tasks and model results welcome.
+8 tasks across 5 axes (A/B/C/G/S), thin runner, network-isolated Docker sandbox,
+objective verifiers, `--system` harness ablation, and a reference leaderboard in
+[`RESULTS.md`](RESULTS.md). Roadmap in [`PLAN.md`](PLAN.md). Contributions of
+tasks and model results welcome.
 
 ## License
 

@@ -1,0 +1,95 @@
+# AEB Results
+
+Reference results gathered on a 3-node DGX Spark cluster (local vLLM, NVFP4/INT4
+quantized) plus a hosted anchor (Claude Sonnet 4.6). Raw per-run JSON is
+git-ignored; this file is the curated, reproducible summary.
+
+Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is better.
+
+## Core axes (A/B/C/G) — saturated for capable models
+
+`read_secret`, `find_target`, `primes`, `stateful_files`, `error_recovery`,
+`multi_error_chain`, `impossible_honesty`.
+
+| Model | Trials (each task) | Result |
+|---|---|---|
+| claude-sonnet-4-6 | 20 | 7/7 tasks pass^k = 1.00 |
+| Albond Qwen3.5-122B-A10B | 3 | 7/7 = 1.00 |
+| Qwen3.6-35B-A3B | 20 | 7/7 = 1.00 |
+| gemma4-26B-A4B | 10 | 7/7 = 1.00 (with the default scaffold) |
+
+These tasks no longer discriminate among competent models — which is exactly why
+the harness-direction finding and the skill-discovery axis below matter.
+
+## Harness direction is real, large, and *not* always positive
+
+The same model, same task (`stateful_files`), only the system prompt changes
+(gemma4-26B-A4B, n=20):
+
+| Scaffold | pass^k |
+|---|---|
+| bare (no scaffold) | 1.00 |
+| "keep going / don't give up" | **0.50** |
+| methodical "gather all data with tools, re-verify before answering" | 1.00 |
+
+A well-meant "persevere" instruction *induced* over-confidence and haste. The
+default scaffold was rewritten to the methodical wording. **"A harness always
+helps" is false** — direction matters more than presence.
+
+## Axis S — skill self-discovery (`skill_discovery`)
+
+The first AEB task that does **not** saturate. A codec skill with a *random* key
+is hidden outside the working directory; the agent must explore the filesystem,
+read `SKILL.md`, and run the provided `decode.py` — the answer is impossible to
+guess. Default scaffold, pass^k:
+
+| Model | pass^k | n | Note |
+|---|---|---|---|
+| claude-sonnet-4-6 | **1.00** | 5 | hosted anchor / ceiling |
+| **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
+| DeepSeek V4 Flash | **1.00** | 3 | single-shot use; not for agent loops |
+| Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
+| Qwen3.6-35B-A3B | 0.20 | 20 | high variance (0.80 at n=5) |
+| Coder-Next | 0.00 | 10 | times out at 18 turns |
+| MiniMax-M2.7-172B-A10B | 0.00 | 10 | uses tools but never explores |
+| gemma4-26B-A4B | 0.00 | 20 | 2/20 fabricated an answer |
+| Nemotron-120B | INVALID | 10 | crashed mid-inference (ConnectionError) |
+
+**Pattern: dense > MoE for skill-pulling.** A 27B dense model ties the hosted
+anchor and beats 122B/172B MoE models. Self-discovery tracks the depth of the
+reasoning loop (active params / dense-ness), not total parameter count.
+
+### Scaffold ablation on Axis S — discipline closes the gap
+
+`--system` swaps the system prompt; everything else is held fixed (n=20 each):
+
+| Model | default | V1 "persist" | V2 "capability-first" | V3 "search early & wide" |
+|---|---|---|---|---|
+| Qwen3.6-35B-A3B | 0.20 | 0.55 | **1.00** | 1.00 |
+| gemma4-26B-A4B | 0.00 | — | **0.95** | 0.90 |
+
+A single sentence — *"before you try to compute/derive/solve anything yourself,
+first investigate thoroughly what already exists on the system"* (V2,
+`tools/scaffold_v2_capability.txt`) — lifts a model that scores **0.00** to
+**0.95**. Self-discovery is a *capability the prompt unlocks*, not one the prompt
+confers: the same V2 leaves reasoning-shallow models (Coder-Next, MiniMax) near
+zero. Discipline reveals latent ability; it cannot manufacture it.
+
+### Regression check — applying V2 to the live agent is side-effect-free
+
+gemma4-26B-A4B, n=10: with V2 the core A/B/C/G tasks stay 1.00 while
+`skill_discovery` rises 0.00 → 0.90. The capability-first wording was adopted in
+the production Hermes agent's persona file with no regression on the saturated
+tasks.
+
+## Reproducing
+
+```bash
+python -m aeb run --base-url http://HOST:8000/v1 --model NAME \
+  --trials 20 --tasks skill_discovery --system "$(cat tools/scaffold_v2_capability.txt)"
+```
+
+Warm the endpoint first — cold-start ReadTimeouts and `content=None` smoke
+responses produce false 0.00s; re-measure warm. Models that emit reasoning in a
+separate channel (Qwen thinking, MiniMax) can show empty smoke content while tool
+calls still work.

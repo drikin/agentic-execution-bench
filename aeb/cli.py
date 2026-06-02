@@ -1,7 +1,7 @@
 """CLI: run the Agentic Execution Bench against any OpenAI-compatible model.
 
 Example:
-  python -m aeb run --base-url http://100.104.183.13:8000/v1 --model gemma4 --trials 3
+  python -m aeb run --base-url http://localhost:8000/v1 --model your-model --trials 3
 """
 from __future__ import annotations
 
