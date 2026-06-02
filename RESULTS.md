@@ -13,6 +13,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 
 | Model | Trials (each task) | Result |
 |---|---|---|
+| gpt-5.5 *(hosted, reasoning)* | 3 | **full clear — all 9 tasks pass^k = 1.00**, incl. skill_discovery |
 | claude-sonnet-4-6 | 20 | 7/7 tasks pass^k = 1.00 |
 | gpt-4.1 *(hosted)* | 3 | 7/7 = 1.00 |
 | Albond Qwen3.5-122B-A10B | 3 | 7/7 = 1.00 |
@@ -46,6 +47,7 @@ guess. Default scaffold, pass^k:
 
 | Model | pass^k | n | Note |
 |---|---|---|---|
+| gpt-5.5 *(hosted, reasoning)* | **1.00** | 3 | converges in ~8.7 turns |
 | claude-sonnet-4-6 | **1.00** | 5 | hosted anchor / ceiling |
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
 | DeepSeek V4 Flash | **1.00** | 3 | single-shot use; not for agent loops |
@@ -58,15 +60,16 @@ guess. Default scaffold, pass^k:
 | Nemotron-120B | INVALID | 10 | crashed mid-inference (ConnectionError) |
 
 **Pattern: dense > MoE for skill-pulling.** A 27B dense model ties the hosted
-anchor and beats 122B/172B MoE models. Self-discovery tracks the depth of the
+anchors and beats 122B/172B MoE models. Self-discovery tracks the depth of the
 reasoning loop (active params / dense-ness), not total parameter count.
 
-**It is not a local-vs-hosted gap.** `gpt-4.1` — a strong hosted model — passes
-all seven core tasks at 1.00 yet scores **0.00** on skill self-discovery (it
-explores but never converges, timing out at 18 turns), landing with the local MoE
-models, while the reasoning-capable hosted `claude-sonnet-4-6` gets 1.00. The
-axis separates *reasoning-loop persistence*, not model provenance — and it is the
-single task on which an otherwise-perfect frontier model can score zero.
+**It is not a local-vs-hosted gap — it is a reasoning-generation gap.** The
+sharpest evidence is within one provider: `gpt-4.1` passes all seven core tasks
+at 1.00 yet scores **0.00** here (explores, never converges, times out at 18
+turns), while `gpt-5.5` — the reasoning-class successor — converges in ~8.7 turns
+for a clean **1.00**, full-clearing every task in the suite. Same vendor, same
+API; the difference is the reasoning loop. This is the one axis on which an
+otherwise-perfect frontier model (gpt-4.1) can still score zero.
 
 ### Scaffold ablation on Axis S — discipline closes the gap
 
@@ -107,6 +110,7 @@ unquoted path or an unquoted redirect target (`> /work/processed output/...` →
 
 | Model | pass^k | n | Note |
 |---|---|---|---|
+| gpt-5.5 *(hosted, reasoning)* | 1.00 | 3 | clean, ~3 turns |
 | gemma4-26B-A4B | 1.00 | 5 | quotes every path cleanly; competent models handle this |
 
 This skill saturates earlier than skill self-discovery — a reasonably capable
