@@ -126,10 +126,10 @@ state and the run trace). Adding a task = adding one file.
 
 ## Status
 
-8 tasks across 5 axes (A/B/C/G/S), thin runner, network-isolated Docker sandbox,
-objective verifiers, `--system` harness ablation, and a reference leaderboard in
-[`RESULTS.md`](RESULTS.md). Roadmap in [`PLAN.md`](PLAN.md). Contributions of
-tasks and model results welcome.
+11 tasks across 6 axes (A/B/C/G/S/P), thin runner, network-isolated Docker
+sandbox, objective verifiers, `--system` harness ablation, and a reference
+leaderboard in [`RESULTS.md`](RESULTS.md). Roadmap in [`PLAN.md`](PLAN.md).
+Contributions of tasks and model results welcome.
 
 ## License
 
