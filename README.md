@@ -61,12 +61,16 @@ methodology in [`RESULTS.md`](RESULTS.md).
 | **Qwen3.6-27B dense** *(local leader)* | **1.00** | 5 |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 |
 | Qwen3.6-35B-A3B | 0.20 | 20 |
+| gpt-4.1 *(hosted)* | 0.00 | 3 |
 | MiniMax-M2.7-172B-A10B | 0.00 | 10 |
 | gemma4-26B-A4B | 0.00 | 20 |
 
 Skill-pulling tracks the **depth of the reasoning loop (dense-ness / active
 params), not total size** — a 27B dense model ties the anchor and beats 122B/172B
-MoE. Core axes A/B/C/G are already saturated (≈1.00) for all of these.
+MoE. And it is **not a local-vs-hosted gap**: hosted `gpt-4.1` aces all seven
+core tasks yet scores **0.00** here (it explores but never converges), while the
+reasoning-capable hosted anchor gets 1.00. Core axes A/B/C/G are already
+saturated (≈1.00) for all of these.
 
 **Harness direction is real and not always positive** — same model, same task,
 only the system prompt changes:

@@ -14,6 +14,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | Model | Trials (each task) | Result |
 |---|---|---|
 | claude-sonnet-4-6 | 20 | 7/7 tasks pass^k = 1.00 |
+| gpt-4.1 *(hosted)* | 3 | 7/7 = 1.00 |
 | Albond Qwen3.5-122B-A10B | 3 | 7/7 = 1.00 |
 | Qwen3.6-35B-A3B | 20 | 7/7 = 1.00 |
 | gemma4-26B-A4B | 10 | 7/7 = 1.00 (with the default scaffold) |
@@ -50,6 +51,7 @@ guess. Default scaffold, pass^k:
 | DeepSeek V4 Flash | **1.00** | 3 | single-shot use; not for agent loops |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
 | Qwen3.6-35B-A3B | 0.20 | 20 | high variance (0.80 at n=5) |
+| **gpt-4.1** *(hosted)* | 0.00 | 3 | aces all other 7 tasks; here explores but times out at 18 turns |
 | Coder-Next | 0.00 | 10 | times out at 18 turns |
 | MiniMax-M2.7-172B-A10B | 0.00 | 10 | uses tools but never explores |
 | gemma4-26B-A4B | 0.00 | 20 | 2/20 fabricated an answer |
@@ -58,6 +60,13 @@ guess. Default scaffold, pass^k:
 **Pattern: dense > MoE for skill-pulling.** A 27B dense model ties the hosted
 anchor and beats 122B/172B MoE models. Self-discovery tracks the depth of the
 reasoning loop (active params / dense-ness), not total parameter count.
+
+**It is not a local-vs-hosted gap.** `gpt-4.1` — a strong hosted model — passes
+all seven core tasks at 1.00 yet scores **0.00** on skill self-discovery (it
+explores but never converges, timing out at 18 turns), landing with the local MoE
+models, while the reasoning-capable hosted `claude-sonnet-4-6` gets 1.00. The
+axis separates *reasoning-loop persistence*, not model provenance — and it is the
+single task on which an otherwise-perfect frontier model can score zero.
 
 ### Scaffold ablation on Axis S — discipline closes the gap
 
