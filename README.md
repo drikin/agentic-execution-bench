@@ -1,5 +1,7 @@
 # Agentic Execution Bench (AEB)
 
+*[日本語版 README は `README.ja.md`](README.ja.md)*
+
 **LLM intelligence is not one number.** A model can be brilliant at single-shot
 answers yet fall apart the moment it has to *act* — call a tool, read the result,
 recover from an error, and see a multi-step task through to the end. AEB measures
@@ -43,6 +45,40 @@ scaffold-ablation study (a single capability-first sentence lifts a 0.00 model t
 0.95).
 
 Planned: protocol stability, escalation, long-horizon (15–30 step) stability.
+
+## Sample results (our local run)
+
+From a 3-node DGX Spark cluster (local vLLM, NVFP4/INT4-quantized) plus a hosted
+anchor. Score = **pass^k** (passes *every* one of k trials). Full tables and
+methodology in [`RESULTS.md`](RESULTS.md).
+
+**Axis S — skill self-discovery (default scaffold):**
+
+| Model | pass^k | n |
+|---|---|---|
+| claude-sonnet-4-6 *(hosted anchor)* | **1.00** | 5 |
+| **Qwen3.6-27B dense** *(local leader)* | **1.00** | 5 |
+| Albond Qwen3.5-122B-A10B | 0.40 | 5 |
+| Qwen3.6-35B-A3B | 0.20 | 20 |
+| MiniMax-M2.7-172B-A10B | 0.00 | 10 |
+| gemma4-26B-A4B | 0.00 | 20 |
+
+Skill-pulling tracks the **depth of the reasoning loop (dense-ness / active
+params), not total size** — a 27B dense model ties the anchor and beats 122B/172B
+MoE. Core axes A/B/C/G are already saturated (≈1.00) for all of these.
+
+**Harness direction is real and not always positive** — same model, same task,
+only the system prompt changes:
+
+| | gemma4 `stateful_files` (n=20) | gemma4 `skill_discovery` (n=20) |
+|---|---|---|
+| bare / default | 1.00 | 0.00 |
+| "keep going, don't give up" | **0.50** | — |
+| capability-first ("search for an existing tool before solving") | 1.00 | **0.95** |
+
+A single capability-first sentence lifts a 0.00 model to 0.95; the same sentence
+*hurts* nothing and a naive "persevere" prompt *induces* over-confidence. This is
+why AEB isolates the harness with `--system`.
 
 ## Quick start
 
