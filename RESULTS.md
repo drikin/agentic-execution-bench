@@ -19,6 +19,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | Albond Qwen3.5-122B-A10B | 3 | 7/7 = 1.00 |
 | Qwen3.6-35B-A3B | 20 | 7/7 = 1.00 |
 | gemma4-26B-A4B | 10 | 7/7 = 1.00 (with the default scaffold) |
+| **DeepSeek V4 Flash FP8** *(TP=2, vLLM + MTP, 2× DGX Spark)* | 3 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery & path_handling_hard |
 
 These tasks no longer discriminate among competent models — which is exactly why
 the harness-direction finding and the skill-discovery axis below matter.
@@ -50,7 +51,7 @@ guess. Default scaffold, pass^k:
 | gpt-5.5 *(hosted, reasoning)* | **1.00** | 3 | converges in ~8.7 turns |
 | claude-sonnet-4-6 | **1.00** | 5 | hosted anchor / ceiling |
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
-| DeepSeek V4 Flash | **1.00** | 3 | single-shot use; not for agent loops |
+| **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns. The earlier "not for agent loops" note was the IQ2XXS single-node build; FP8 TP=2 on vLLM (prefix cache + `deepseek_v4` DSML tool parser) removes that limit |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
 | Qwen3.6-35B-A3B | 0.20 | 20 | high variance (0.80 at n=5) |
 | **gpt-4.1** *(hosted)* | 0.00 | 3 | aces all other 7 tasks; here explores but times out at 18 turns |
@@ -147,6 +148,7 @@ Adding the two traps that actually bite turns Axis P back into a discriminator:
 |---|---|---|---|
 | Albond Qwen3.5-122B-A10B | **1.00** | 5 | handles `~`+CWD correctly (9.2 turns — works for it) |
 | gemma4-26B-A4B | **0.80** | 5 | one trial **resolved `~` to `/work` instead of `$HOME`** and wrote the result to the wrong place |
+| **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | resolves `~`+CWD correctly (8.0 turns) |
 
 The easy variant is 1.00 for both; the hard variant separates them. gemma4's
 failure is the exact real-world bug the task targets — a model "knows" `~` is a
