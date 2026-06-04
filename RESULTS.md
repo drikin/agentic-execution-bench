@@ -19,6 +19,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | Albond Qwen3.5-122B-A10B | 3 | 7/7 = 1.00 |
 | Qwen3.6-35B-A3B | 20 | 7/7 = 1.00 |
 | gemma4-26B-A4B | 10 | 7/7 = 1.00 (with the default scaffold) |
+| gemma-4-12B-it *(new, dense)* | 5 | 7/7 = 1.00 (struggles only on the path axis below) |
 | **DeepSeek V4 Flash FP8** *(TP=2, vLLM + MTP, 2× DGX Spark)* | 3 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery & path_handling_hard |
 
 These tasks no longer discriminate among competent models — which is exactly why
@@ -52,6 +53,7 @@ guess. Default scaffold, pass^k:
 | claude-sonnet-4-6 | **1.00** | 5 | hosted anchor / ceiling |
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns. The earlier "not for agent loops" note was the IQ2XXS single-node build; FP8 TP=2 on vLLM (prefix cache + `deepseek_v4` DSML tool parser) removes that limit |
+| **gemma-4-12B-it** *(new, dense, "Unified")* | 0.60 | 5 | 12B dense beats 122B/35B MoE here — best of the sub-1.00 locals |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
 | Qwen3.6-35B-A3B | 0.20 | 20 | high variance (0.80 at n=5) |
 | **gpt-4.1** *(hosted)* | 0.00 | 3 | aces all other 7 tasks; here explores but times out at 18 turns |
@@ -59,6 +61,11 @@ guess. Default scaffold, pass^k:
 | MiniMax-M2.7-172B-A10B | 0.00 | 10 | uses tools but never explores |
 | gemma4-26B-A4B | 0.00 | 20 | 2/20 fabricated an answer |
 | Nemotron-120B | INVALID | 10 | crashed mid-inference (ConnectionError) |
+
+**The new dense Gemma reinforces it.** `gemma-4-12B-it` (released 2026-06-03,
+dense "Unified") scores **0.60** — beating Albond-122B-A10B (0.40) and
+Qwen3.6-35B-A3B (0.20), and dwarfing the *older* `gemma4-26B-A4B` MoE's **0.00**.
+A 12B dense out-pulls a 122B MoE: skill-pulling tracks reasoning depth / dense-ness.
 
 **Pattern: dense > MoE for skill-pulling.** A 27B dense model ties the hosted
 anchors and beats 122B/172B MoE models. Self-discovery tracks the depth of the
@@ -118,10 +125,14 @@ unquoted path or an unquoted redirect target (`> /work/processed output/...` →
 | MiniMax-M2.7-172B-A10B | 1.00 | 5 | 7.8 turns — works harder, still lands it |
 | Coder-Next | 1.00 | 5 | |
 | gemma4-26B-A4B | 1.00 | 5 | |
+| **gemma-4-12B-it** *(new, dense)* | **0.80** | 5 | first model to drop the *easy* path task (1 miss, 13 turns) |
 
-**Honest negative result: at this difficulty, path handling is a *solved*,
-saturated skill — it does not discriminate.** Every model swept scores 1.00,
-*including* MiniMax and Coder-Next, which score **0.00** on skill self-discovery.
+**Mostly saturated, but it bottoms out at the small end.** Every larger model
+swept scores 1.00, *including* MiniMax and Coder-Next, which score **0.00** on
+skill self-discovery — so finding a tool and handling a path are independent
+abilities. The one exception is the small `gemma-4-12B-it`, which drops to **0.80**
+even here: path handling is a table-stakes skill the big models all have, but it
+*does* discriminate once the model is small enough.
 So the two are independent abilities: failing to *find* a tool is not the same as
 failing to *handle a path*. Current instruction-tuned models — even ones that
 collapse on self-discovery — quote spaces and build paths from config reflexively.
@@ -148,6 +159,7 @@ Adding the two traps that actually bite turns Axis P back into a discriminator:
 |---|---|---|---|
 | Albond Qwen3.5-122B-A10B | **1.00** | 5 | handles `~`+CWD correctly (9.2 turns — works for it) |
 | gemma4-26B-A4B | **0.80** | 5 | one trial **resolved `~` to `/work` instead of `$HOME`** and wrote the result to the wrong place |
+| **gemma-4-12B-it** *(new, dense)* | **0.40** | 5 | the path axis is this model's clear weakness (aces all 7 core tasks + skill_discovery 0.60, but 0.40 here) |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | resolves `~`+CWD correctly (8.0 turns) |
 
 The easy variant is 1.00 for both; the hard variant separates them. gemma4's
