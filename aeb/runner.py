@@ -107,7 +107,7 @@ def _chat(base_url, model, messages, tools, api_key, extra_body):
         body = _build_body(model, messages, tools, quirks)
         if extra_body:
             body.update(extra_body)
-        r = requests.post(url, headers=headers, json=body, timeout=180)
+        r = requests.post(url, headers=headers, json=body, timeout=600)
         if r.status_code == 400 and _adapt_quirks(r.text, quirks):
             continue  # learned a fix (e.g. max_tokens -> max_completion_tokens); retry
         break

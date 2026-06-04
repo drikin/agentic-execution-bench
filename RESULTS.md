@@ -53,7 +53,7 @@ guess. Default scaffold, pass^k:
 | claude-sonnet-4-6 | **1.00** | 5 | hosted anchor / ceiling |
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns. The earlier "not for agent loops" note was the IQ2XXS single-node build; FP8 TP=2 on vLLM (prefix cache + `deepseek_v4` DSML tool parser) removes that limit |
-| **gemma-4-12B-it** *(new, dense, "Unified")* | 0.60 | 5 | 12B dense beats 122B/35B MoE here — best of the sub-1.00 locals |
+| **gemma-4-12B-it** *(new, dense, "Unified")* | 0.27 | 15 | extremely high variance: 0.60 (n=5) collapsed to 0.27 at n=15 — see note below |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
 | Qwen3.6-35B-A3B | 0.20 | 20 | high variance (0.80 at n=5) |
 | **gpt-4.1** *(hosted)* | 0.00 | 3 | aces all other 7 tasks; here explores but times out at 18 turns |
@@ -62,10 +62,14 @@ guess. Default scaffold, pass^k:
 | gemma4-26B-A4B | 0.00 | 20 | 2/20 fabricated an answer |
 | Nemotron-120B | INVALID | 10 | crashed mid-inference (ConnectionError) |
 
-**The new dense Gemma reinforces it.** `gemma-4-12B-it` (released 2026-06-03,
-dense "Unified") scores **0.60** — beating Albond-122B-A10B (0.40) and
-Qwen3.6-35B-A3B (0.20), and dwarfing the *older* `gemma4-26B-A4B` MoE's **0.00**.
-A 12B dense out-pulls a 122B MoE: skill-pulling tracks reasoning depth / dense-ness.
+**Caution — small-n skill_discovery is very noisy (a cautionary data point).**
+`gemma-4-12B-it` (released 2026-06-03, dense "Unified") first scored **0.60** at
+n=5, which looked like a 12B dense out-pulling the 122B/35B MoEs. Re-running at
+n=10 gave **0.10**; the combined **n=15 estimate is 0.27** — i.e. roughly level
+with Qwen3.6-35B-A3B and *below* Albond-122B's 0.40, not above it. The model is
+genuinely above the *old* `gemma4-26B-A4B` MoE (0.00), but the "12B beats 122B"
+read was an artifact of a lucky 5-trial sample. **Treat any skill_discovery score
+taken at n≤5 as a rough sighting, not a ranking; n≥15 is needed for this axis.**
 
 **Pattern: dense > MoE for skill-pulling.** A 27B dense model ties the hosted
 anchors and beats 122B/172B MoE models. Self-discovery tracks the depth of the
@@ -159,13 +163,40 @@ Adding the two traps that actually bite turns Axis P back into a discriminator:
 |---|---|---|---|
 | Albond Qwen3.5-122B-A10B | **1.00** | 5 | handles `~`+CWD correctly (9.2 turns — works for it) |
 | gemma4-26B-A4B | **0.80** | 5 | one trial **resolved `~` to `/work` instead of `$HOME`** and wrote the result to the wrong place |
-| **gemma-4-12B-it** *(new, dense)* | **0.40** | 5 | the path axis is this model's clear weakness (aces all 7 core tasks + skill_discovery 0.60, but 0.40 here) |
+| **gemma-4-12B-it** *(new, dense)* | **0.40** | 5 | the path axis is this model's clear weakness (default scaffold: aces all 7 core tasks, but 0.40 here) — fixable with a scaffold, see below |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | resolves `~`+CWD correctly (8.0 turns) |
 
 The easy variant is 1.00 for both; the hard variant separates them. gemma4's
 failure is the exact real-world bug the task targets — a model "knows" `~` is a
 home shortcut but mis-resolves it under friction. (n=5 is a first signal; a
 full multi-model sweep at n≥20 would tighten the ranking.)
+
+### Scaffold ablation on Axis P — a targeted scaffold closes the gap, but only if *added*, not *swapped in*
+
+The path weakness of `gemma-4-12B-it` is almost entirely a prompting gap. A
+`--system` scaffold of concrete path rules (always quote paths incl. the redirect
+target; resolve `~`→`$HOME` the moment you read a path — `~` is not `/work`/cwd;
+`cd` into a program's own dir before running it; verify the output file at the
+exact path) — refined by a 3-model design review (DeepSeek + Grok + Claude) —
+moves gemma-4-12B (n=5):
+
+| scaffold | path_handling | path_handling_hard |
+|---|---|---|
+| default (methodical) | 0.80 | 0.40 |
+| path-rules **replacing** default | 1.00 | 0.80 → **1.00** (refined) |
+| path-rules **added to** default | 1.00 | 1.00 |
+
+**The critical caveat: how you apply it matters more than the wording.** `--system`
+*replaces* the prompt, so a path-only scaffold drops the default's "investigate
+broadly" guidance — and that **silently destroys an unrelated skill**:
+gemma-4-12B's `skill_discovery` went **0.27 (default) → 0.00** under the path-only
+replacement. *Adding* the path rules to the methodical default instead keeps
+skill_discovery intact (0.47 at n=15, statistically ≥ the 0.27 default) while
+still lifting path_handling to 1.00. A scaffold competes for a small model's
+attention; narrow it too far and you trade one capability for another. DeepSeek
+(a ceiling model) showed no movement either way — scaffold effects are
+model-dependent. Lesson: **append capability-specific rules, never replace the
+base scaffold; and verify non-target axes for regressions before shipping.**
 
 ### URL path joining (`url_path`)
 
