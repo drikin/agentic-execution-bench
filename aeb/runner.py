@@ -91,7 +91,7 @@ def _adapt_quirks(resp_text, quirks):
     if ("temperature" in t and "no_temperature" not in quirks
             and any(s in t for s in ("does not support", "only the default",
                                      "unsupported value", "is not supported",
-                                     "only supports"))):
+                                     "only supports", "is deprecated"))):
         quirks.add("no_temperature"); changed = True
     return changed
 
@@ -137,7 +137,11 @@ def run_agent(task, sandbox: DockerSandbox, *, base_url: str, model: str,
             tool_calls = msg.get("tool_calls") or []
             if not tool_calls:
                 tr.final_answer = (msg.get("content") or msg.get("reasoning_content") or "").strip()
-                tr.stop_reason = "final_answer"
+                # Surface abnormal provider-side stops (e.g. a hosted model's safety
+                # filter, or output truncation) instead of mislabeling them as a
+                # deliberate final answer.
+                fr = choice.get("finish_reason") or ""
+                tr.stop_reason = fr if fr in ("content_filter", "length") else "final_answer"
                 break
             for tc in tool_calls:
                 tr.tool_calls += 1
