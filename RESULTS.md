@@ -1,8 +1,8 @@
 # AEB Results
 
 Reference results gathered on a 3-node DGX Spark cluster (local vLLM, NVFP4/INT4
-quantized) plus a hosted anchor (Claude Sonnet 4.6). Raw per-run JSON is
-git-ignored; this file is the curated, reproducible summary.
+quantized) plus hosted anchors (Claude Sonnet 4.6, Claude Fable 5, gpt-4.1/5.5).
+Raw per-run JSON is git-ignored; this file is the curated, reproducible summary.
 
 Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is better.
 
@@ -14,6 +14,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | Model | Trials (each task) | Result |
 |---|---|---|
 | gpt-5.5 *(hosted, reasoning)* | 3 | **full clear — all 9 tasks pass^k = 1.00**, incl. skill_discovery |
+| claude-fable-5 *(hosted, reasoning, rel. 2026-06-09)* | 3 | 6/7 = 1.00; error_recovery 0.67 is a **verifier artifact**, see "Hosted-model failure modes" below |
 | claude-sonnet-4-6 | 20 | 7/7 tasks pass^k = 1.00 |
 | gpt-4.1 *(hosted)* | 3 | 7/7 = 1.00 |
 | Albond Qwen3.5-122B-A10B | 3 | 7/7 = 1.00 |
@@ -51,6 +52,7 @@ guess. Default scaffold, pass^k:
 |---|---|---|---|
 | gpt-5.5 *(hosted, reasoning)* | **1.00** | 3 | converges in ~8.7 turns |
 | claude-sonnet-4-6 | **1.00** | 5 | hosted anchor / ceiling |
+| claude-fable-5 *(hosted, reasoning)* | 0.00† | 3 | **† safety filter, not capability**: `finish_reason: content_filter` on turn 1, 6/6 deterministic — see "Hosted-model failure modes" |
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns. The earlier "not for agent loops" note was the IQ2XXS single-node build; FP8 TP=2 on vLLM (prefix cache + `deepseek_v4` DSML tool parser) removes that limit |
 | **gemma-4-12B-it** *(new, dense, "Unified")* | 0.27 | 15 | extremely high variance: 0.60 (n=5) collapsed to 0.27 at n=15 — see note below |
@@ -209,6 +211,7 @@ parts and fetch it (`curl`/`wget` are absent, so it uses Python's urllib).
 | Model | pass^k | n | Note |
 |---|---|---|---|
 | gemma4-26B-A4B | 1.00 | 5 | reads config, joins with the slash, one-shot fetch |
+| claude-fable-5 *(hosted, reasoning)* | 0.00† | 3 | **† safety filter** (`content_filter` on turn 1) — "fetch the secret" wording trips it; see below |
 
 Like simple filesystem paths, **simple URL joining saturates** — gemma4 builds
 the right URL directly. The discriminating version would be the subtler join trap
@@ -216,6 +219,45 @@ the right URL directly. The discriminating version would be the subtler join tra
 `base+resource` → `//` and `urljoin` → dropped prefix fail, and only deliberate
 slash-normalization works), mirroring `path_handling_hard`. Built and left as the
 natural next step.
+
+## Hosted-model failure modes (Claude Fable 5, 2026-06-09)
+
+Running the day-one release of Claude Fable 5 (Anthropic's first Mythos-class
+model, via the OpenAI-compat endpoint) surfaced **two failure modes that have
+nothing to do with agentic capability** — both worth knowing about when
+benchmarking hosted frontier models. Headline: **AES 0.79** (n=3), with every
+miss explained below.
+
+**1. The safety filter kills the agent loop before it starts.**
+`skill_discovery` ("report the ORIGINAL decoded value" of an obfuscated file)
+and `url_path` ("fetch the secret" from a local service) both return
+`finish_reason: content_filter` on **turn 1, 6/6 deterministic** — empty
+content, zero tool calls, ~9 completion tokens. The model never gets to
+explore. The same tasks are full-cleared by gpt-5.5 and claude-sonnet-4-6, and
+Fable 5 itself aces `read_secret` (which also says "secret"), so the trigger
+is the decode/fetch-a-secret *combination*, presumably a cybersecurity
+safeguard. For an *agent*, a refusal is operationally identical to a total
+capability loss on that task — "able but not allowed" scores the same 0.00 as
+"unable". The runner now records `content_filter` as the stop reason instead
+of mislabeling it a final answer.
+
+**2. Defensive shell style defeats exit-code instrumentation.**
+Fable 5 habitually appends `; echo "exit: $?"` to commands. The compound
+command then always exits 0, so the harness's `errors_seen` (which counts
+non-zero tool-call exits) never registers the planted `FileNotFoundError` the
+model *actually hit and truthfully reported* (`sum=60, recovered=Yes,
+error_type=FileNotFoundError`). That cost it the `hit_a_real_error_in_trace`
+check in one `error_recovery` trial → pass^3 0.67. This is a **verifier
+artifact**: the very habit that makes a model a careful agent (always
+inspecting exit codes) makes its errors invisible to exit-code-based scoring.
+A future verifier should scan tool output for tracebacks as well as exit
+codes.
+
+Two API-compat notes from the same run, now handled by the runner: Fable 5
+rejects `temperature` with a 400 whose body says ``"`temperature` is
+deprecated for this model"`` (new wording — the quirk-learner now matches
+"is deprecated"), and abnormal `finish_reason`s (`content_filter`, `length`)
+are surfaced in `stop_reason`.
 
 ## Reproducing
 
