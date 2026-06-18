@@ -54,6 +54,7 @@ guess. Default scaffold, pass^k:
 | claude-sonnet-4-6 | **1.00** | 5 | hosted anchor / ceiling |
 | claude-fable-5 *(hosted, reasoning)* | 0.00† | 3 | **† safety filter, not capability**: `finish_reason: content_filter` on turn 1, 6/6 deterministic — see "Hosted-model failure modes" |
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
+| Qwen3.6-27B-MTP-pi-tune *(GGUF Q4_K_M, MTP draft)* | 0.53 | 15 | community MTP fine-tune + 4-bit quant of the 27B dense; default drops the dense's 1.00 to 0.53 (still above the 35B/122B MoEs). Capability-first scaffold recovers it to 0.93 — see ablation below |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns. The earlier "not for agent loops" note was the IQ2XXS single-node build; FP8 TP=2 on vLLM (prefix cache + `deepseek_v4` DSML tool parser) removes that limit |
 | **gemma-4-12B-it** *(new, dense, "Unified")* | 0.27 | 15 | extremely high variance: 0.60 (n=5) collapsed to 0.27 at n=15 — see note below |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
@@ -87,12 +88,21 @@ otherwise-perfect frontier model (gpt-4.1) can still score zero.
 
 ### Scaffold ablation on Axis S — discipline closes the gap
 
-`--system` swaps the system prompt; everything else is held fixed (n=20 each):
+`--system` swaps the system prompt; everything else is held fixed (n=20 each
+unless noted):
 
 | Model | default | V1 "persist" | V2 "capability-first" | V3 "search early & wide" |
 |---|---|---|---|---|
 | Qwen3.6-35B-A3B | 0.20 | 0.55 | **1.00** | 1.00 |
 | gemma4-26B-A4B | 0.00 | — | **0.95** | 0.90 |
+| Qwen3.6-27B-MTP-pi-tune *(GGUF Q4_K_M, n=15)* | 0.53 | — | **0.93** | — |
+
+The MTP-pi-tune row reproduces the effect on a *quantized* model: V2 lifts
+`skill_discovery` 0.53 → **0.93** (8/15 → 14/15) and roughly halves the agent
+loop (15.2 → **8.3** turns) — the model stops trying to derive the answer itself
+and goes looking for the hidden skill first. n=15 also corrected an over-rosy
+n=5 sighting (0.40 → 1.00) down to the truer 0.53 → 0.93, a reminder that this
+axis needs n≥15.
 
 A single sentence — *"before you try to compute/derive/solve anything yourself,
 first investigate thoroughly what already exists on the system"* (V2,
