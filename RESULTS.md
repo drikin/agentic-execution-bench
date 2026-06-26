@@ -22,6 +22,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | gemma4-26B-A4B | 10 | 7/7 = 1.00 (with the default scaffold) |
 | gemma-4-12B-it *(new, dense)* | 5 | 7/7 = 1.00 (struggles only on the path axis below) |
 | **DeepSeek V4 Flash FP8** *(TP=2, vLLM + MTP, 2× DGX Spark)* | 3 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery & path_handling_hard |
+| **Qwen-AgentWorld-35B-A3B** *(BF16, vLLM, DGX Spark)* | 3 | 9/11 pass^k = 1.00; path_handling_hard 0.33, skill_discovery 0.33 (default scaffold) — see below |
 
 These tasks no longer discriminate among competent models — which is exactly why
 the harness-direction finding and the skill-discovery axis below matter.
@@ -59,6 +60,7 @@ guess. Default scaffold, pass^k:
 | **gemma-4-12B-it** *(new, dense, "Unified")* | 0.27 | 15 | extremely high variance: 0.60 (n=5) collapsed to 0.27 at n=15 — see note below |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
 | Qwen3.6-35B-A3B | 0.20 | 20 | high variance (0.80 at n=5) |
+| **Qwen-AgentWorld-35B-A3B** | 0.33 | 3 | World-model trained; 3B active MoE. V2 lifts to 0.80 (see ablation) |
 | **gpt-4.1** *(hosted)* | 0.00 | 3 | aces all other 7 tasks; here explores but times out at 18 turns |
 | Coder-Next | 0.00 | 10 | times out at 18 turns |
 | MiniMax-M2.7-172B-A10B | 0.00 | 10 | uses tools but never explores |
@@ -94,6 +96,7 @@ unless noted):
 | Model | default | V1 "persist" | V2 "capability-first" | V3 "search early & wide" |
 |---|---|---|---|---|
 | Qwen3.6-35B-A3B | 0.20 | 0.55 | **1.00** | 1.00 |
+| **Qwen-AgentWorld-35B-A3B** *(3B active, n=5)* | 0.33 | — | **0.80** | — |
 | gemma4-26B-A4B | 0.00 | — | **0.95** | 0.90 |
 | Qwen3.6-27B-MTP-pi-tune *(GGUF Q4_K_M, n=15)* | 0.53 | — | **0.93** | — |
 
@@ -177,6 +180,7 @@ Adding the two traps that actually bite turns Axis P back into a discriminator:
 | gemma4-26B-A4B | **0.80** | 5 | one trial **resolved `~` to `/work` instead of `$HOME`** and wrote the result to the wrong place |
 | **gemma-4-12B-it** *(new, dense)* | **0.40** | 5 | the path axis is this model's clear weakness (default scaffold: aces all 7 core tasks, but 0.40 here) — fixable with a scaffold, see below |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | resolves `~`+CWD correctly (8.0 turns) |
+| **Qwen-AgentWorld-35B-A3B** | 0.33 | 3 | 3B active: 1/3 trials; mis-resolves `~` under friction (13.7 turns avg) |
 
 The easy variant is 1.00 for both; the hard variant separates them. gemma4's
 failure is the exact real-world bug the task targets — a model "knows" `~` is a
