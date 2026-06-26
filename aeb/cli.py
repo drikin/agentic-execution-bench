@@ -28,6 +28,7 @@ def main():
     r.add_argument("--tasks-root", default=str(ROOT / "tasks"))
     r.add_argument("--image", default="python:3.12-slim")
     r.add_argument("--system", default=None, help="override the agent system prompt (profile)")
+    r.add_argument("--extra-body", default=None, help="JSON string merged into every API request body (e.g. '{\"chat_template_kwargs\":{\"enable_thinking\":false}}')")
     r.add_argument("--out", default=None)
     a = ap.parse_args()
     if a.cmd == "run":
@@ -40,11 +41,15 @@ def cmd_run(a):
     if a.tasks:
         mods = [m for m in mods if m.TASK["id"] in a.tasks]
     results = []
+    extra_body = None
+    if a.extra_body:
+        import json as _json
+        extra_body = _json.loads(a.extra_body)
     print(f"# Agentic Execution Bench | model={a.model} | tasks={[m.TASK['id'] for m in mods]} | trials={a.trials}\n")
     for m in mods:
         for t in range(a.trials):
             res = run_one(m, base_url=a.base_url, model=a.model, api_key=a.api_key,
-                          system=a.system, trial=t, image=a.image)
+                          system=a.system, trial=t, image=a.image, extra_body=extra_body)
             results.append(res)
             mark = "PASS" if res.get("passed") else "FAIL"
             extra = res.get("api_error") or res.get("error") or res.get("notes", "")
