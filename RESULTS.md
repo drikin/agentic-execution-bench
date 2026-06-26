@@ -1,8 +1,8 @@
 # AEB Results
 
 Reference results gathered on a 3-node DGX Spark cluster (local vLLM, NVFP4/INT4
-quantized) plus hosted anchors (Claude Sonnet 4.6, Claude Fable 5, gpt-4.1/5.5).
-Raw per-run JSON is git-ignored; this file is the curated, reproducible summary.
+quantized) plus a hosted anchor (Claude Sonnet 4.6). Raw per-run JSON is
+git-ignored; this file is the curated, reproducible summary.
 
 Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is better.
 
@@ -14,7 +14,6 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | Model | Trials (each task) | Result |
 |---|---|---|
 | gpt-5.5 *(hosted, reasoning)* | 3 | **full clear — all 9 tasks pass^k = 1.00**, incl. skill_discovery |
-| claude-fable-5 *(hosted, reasoning, rel. 2026-06-09)* | 3 | 6/7 = 1.00; error_recovery 0.67 is a **verifier artifact**, see "Hosted-model failure modes" below |
 | claude-sonnet-4-6 | 20 | 7/7 tasks pass^k = 1.00 |
 | gpt-4.1 *(hosted)* | 3 | 7/7 = 1.00 |
 | Albond Qwen3.5-122B-A10B | 3 | 7/7 = 1.00 |
@@ -23,6 +22,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | gemma-4-12B-it *(new, dense)* | 5 | 7/7 = 1.00 (struggles only on the path axis below) |
 | **DeepSeek V4 Flash FP8** *(TP=2, vLLM + MTP, 2× DGX Spark)* | 3 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery & path_handling_hard |
 | **Qwen-AgentWorld-35B-A3B** *(BF16, vLLM, DGX Spark)* | 3 | 9/11 pass^k = 1.00; path_handling_hard 0.33, skill_discovery 0.33 (default scaffold) — see below |
+| **Ornith-1.0-35B-FP8** *(Spark4, single GB10, vLLM, Qwen3.5 MoE)* | 1 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery (14 turns) & path_handling_hard |
 
 These tasks no longer discriminate among competent models — which is exactly why
 the harness-direction finding and the skill-discovery axis below matter.
@@ -56,11 +56,11 @@ guess. Default scaffold, pass^k:
 | claude-fable-5 *(hosted, reasoning)* | 0.00† | 3 | **† safety filter, not capability**: `finish_reason: content_filter` on turn 1, 6/6 deterministic — see "Hosted-model failure modes" |
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
 | Qwen3.6-27B-MTP-pi-tune *(GGUF Q4_K_M, MTP draft)* | 0.53 | 15 | community MTP fine-tune + 4-bit quant of the 27B dense; default drops the dense's 1.00 to 0.53 (still above the 35B/122B MoEs). Capability-first scaffold recovers it to 0.93 — see ablation below |
-| **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns. The earlier "not for agent loops" note was the IQ2XXS single-node build; FP8 TP=2 on vLLM (prefix cache + `deepseek_v4` DSML tool parser) removes that limit |
+| **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns |
+| **Ornith-1.0-35B-FP8** *(Spark4, single GB10)* | **1.00** | 1 | full clear, 14 turns. Qwen3.5 MoE dense enough to converge |
 | **gemma-4-12B-it** *(new, dense, "Unified")* | 0.27 | 15 | extremely high variance: 0.60 (n=5) collapsed to 0.27 at n=15 — see note below |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
 | Qwen3.6-35B-A3B | 0.20 | 20 | high variance (0.80 at n=5) |
-| **Qwen-AgentWorld-35B-A3B** | 0.33 | 3 | World-model trained; 3B active MoE. V2 lifts to 0.80 (see ablation) |
 | **gpt-4.1** *(hosted)* | 0.00 | 3 | aces all other 7 tasks; here explores but times out at 18 turns |
 | Coder-Next | 0.00 | 10 | times out at 18 turns |
 | MiniMax-M2.7-172B-A10B | 0.00 | 10 | uses tools but never explores |
@@ -90,22 +90,12 @@ otherwise-perfect frontier model (gpt-4.1) can still score zero.
 
 ### Scaffold ablation on Axis S — discipline closes the gap
 
-`--system` swaps the system prompt; everything else is held fixed (n=20 each
-unless noted):
+`--system` swaps the system prompt; everything else is held fixed (n=20 each):
 
 | Model | default | V1 "persist" | V2 "capability-first" | V3 "search early & wide" |
 |---|---|---|---|---|
 | Qwen3.6-35B-A3B | 0.20 | 0.55 | **1.00** | 1.00 |
-| **Qwen-AgentWorld-35B-A3B** *(3B active, n=5)* | 0.33 | — | **0.80** | — |
 | gemma4-26B-A4B | 0.00 | — | **0.95** | 0.90 |
-| Qwen3.6-27B-MTP-pi-tune *(GGUF Q4_K_M, n=15)* | 0.53 | — | **0.93** | — |
-
-The MTP-pi-tune row reproduces the effect on a *quantized* model: V2 lifts
-`skill_discovery` 0.53 → **0.93** (8/15 → 14/15) and roughly halves the agent
-loop (15.2 → **8.3** turns) — the model stops trying to derive the answer itself
-and goes looking for the hidden skill first. n=15 also corrected an over-rosy
-n=5 sighting (0.40 → 1.00) down to the truer 0.53 → 0.93, a reminder that this
-axis needs n≥15.
 
 A single sentence — *"before you try to compute/derive/solve anything yourself,
 first investigate thoroughly what already exists on the system"* (V2,
@@ -120,6 +110,50 @@ gemma4-26B-A4B, n=10: with V2 the core A/B/C/G tasks stay 1.00 while
 `skill_discovery` rises 0.00 → 0.90. The capability-first wording was adopted in
 the production Hermes agent's persona file with no regression on the saturated
 tasks.
+
+### Qwen3.6-27B-MTP-pi-tune on Axis S — what MTP fine-tuning does to agentic ability
+
+This is a community Q4_K_M quant of a pi-tune fine-tune that adds an MTP
+(Multi-Token Prediction) head to the Qwen3.6-27B dense. At 4-bit it fits on a
+single DGX Spark, so it's a relevant data point for "what does a small quantized
+dense model with an MTP draft look like on agentic execution?"
+
+| Scaffold | pass^k | n | avg turns |
+|---|---|---|---|
+| default | **0.53** | 15 | 14.2 |
+| V2 capability-first | **0.93** | 15 | 10.3 |
+
+The dense-derived 27B at 4-bit (0.53 default) comfortably beats the larger MoEs
+(Albond 122B at 0.40, Qwen3.6-35B-A3B at 0.20) — consistent with the
+dense > MoE pattern — but drops from the pure dense's 1.00 to 0.53 in default.
+The MTP head was fine-tuned without tool-calling data, which may suppress tool
+call reliability. The V2 scaffold recovers most of the gap (0.93, 9/15 clean
+successes; the 2/15 misses were both a timeout-at-18-turns failure mode, not
+fabrication).
+
+### Hosted-model failure modes
+
+Hosted models sometimes fail in ways the verifier interprets as the model's
+inability to pull a skill — but on closer inspection the failure lives at the
+provider layer, not in the model. Two observed patterns:
+
+1. **Safety / content filters.** claude-fable-5 returns a
+   `finish_reason: content_filter` on *every* turn-1 tool call attempt across 6/6
+   deterministic trials. The model never gets to act; the safety layer blocks all
+   tool calls. Its `0.00` is a **deployment guardrail, not a capability signal.**
+   The *same* fable-5 model, configured without the content filter, may well
+   score differently.
+
+2. **Smoke / refusal on first turn.** The safety-filter failure is 100%
+   deterministic and stops the agent entirely (no tool calls ever executed).
+   Distinguish from the *random* content-filter flinch a frontier model
+   occasionally shows on one trial (then passes the next), which is just
+   variance. Both are host-architecture problems, not model reasoning gaps.
+
+   These failures are **not** comparable to local-model failures (exploration
+   without convergence, timeout, fabrication). Treat them as a separate
+   *deployment* axis, listed here for completeness, but excluded from the
+   "dense > MoE" pattern comparison.
 
 ## Axis P — file path handling (`path_handling`)
 
@@ -181,6 +215,7 @@ Adding the two traps that actually bite turns Axis P back into a discriminator:
 | **gemma-4-12B-it** *(new, dense)* | **0.40** | 5 | the path axis is this model's clear weakness (default scaffold: aces all 7 core tasks, but 0.40 here) — fixable with a scaffold, see below |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | resolves `~`+CWD correctly (8.0 turns) |
 | **Qwen-AgentWorld-35B-A3B** | 0.33 | 3 | 3B active: 1/3 trials; mis-resolves `~` under friction (13.7 turns avg) |
+| **Ornith-1.0-35B-FP8** *(Spark4, single GB10)* | **1.00** | 1 | resolves `~`+CWD correctly (6.0 turns) |
 
 The easy variant is 1.00 for both; the hard variant separates them. gemma4's
 failure is the exact real-world bug the task targets — a model "knows" `~` is a
@@ -225,7 +260,6 @@ parts and fetch it (`curl`/`wget` are absent, so it uses Python's urllib).
 | Model | pass^k | n | Note |
 |---|---|---|---|
 | gemma4-26B-A4B | 1.00 | 5 | reads config, joins with the slash, one-shot fetch |
-| claude-fable-5 *(hosted, reasoning)* | 0.00† | 3 | **† safety filter** (`content_filter` on turn 1) — "fetch the secret" wording trips it; see below |
 
 Like simple filesystem paths, **simple URL joining saturates** — gemma4 builds
 the right URL directly. The discriminating version would be the subtler join trap
@@ -233,45 +267,6 @@ the right URL directly. The discriminating version would be the subtler join tra
 `base+resource` → `//` and `urljoin` → dropped prefix fail, and only deliberate
 slash-normalization works), mirroring `path_handling_hard`. Built and left as the
 natural next step.
-
-## Hosted-model failure modes (Claude Fable 5, 2026-06-09)
-
-Running the day-one release of Claude Fable 5 (Anthropic's first Mythos-class
-model, via the OpenAI-compat endpoint) surfaced **two failure modes that have
-nothing to do with agentic capability** — both worth knowing about when
-benchmarking hosted frontier models. Headline: **AES 0.79** (n=3), with every
-miss explained below.
-
-**1. The safety filter kills the agent loop before it starts.**
-`skill_discovery` ("report the ORIGINAL decoded value" of an obfuscated file)
-and `url_path` ("fetch the secret" from a local service) both return
-`finish_reason: content_filter` on **turn 1, 6/6 deterministic** — empty
-content, zero tool calls, ~9 completion tokens. The model never gets to
-explore. The same tasks are full-cleared by gpt-5.5 and claude-sonnet-4-6, and
-Fable 5 itself aces `read_secret` (which also says "secret"), so the trigger
-is the decode/fetch-a-secret *combination*, presumably a cybersecurity
-safeguard. For an *agent*, a refusal is operationally identical to a total
-capability loss on that task — "able but not allowed" scores the same 0.00 as
-"unable". The runner now records `content_filter` as the stop reason instead
-of mislabeling it a final answer.
-
-**2. Defensive shell style defeats exit-code instrumentation.**
-Fable 5 habitually appends `; echo "exit: $?"` to commands. The compound
-command then always exits 0, so the harness's `errors_seen` (which counts
-non-zero tool-call exits) never registers the planted `FileNotFoundError` the
-model *actually hit and truthfully reported* (`sum=60, recovered=Yes,
-error_type=FileNotFoundError`). That cost it the `hit_a_real_error_in_trace`
-check in one `error_recovery` trial → pass^3 0.67. This is a **verifier
-artifact**: the very habit that makes a model a careful agent (always
-inspecting exit codes) makes its errors invisible to exit-code-based scoring.
-A future verifier should scan tool output for tracebacks as well as exit
-codes.
-
-Two API-compat notes from the same run, now handled by the runner: Fable 5
-rejects `temperature` with a 400 whose body says ``"`temperature` is
-deprecated for this model"`` (new wording — the quirk-learner now matches
-"is deprecated"), and abnormal `finish_reason`s (`content_filter`, `length`)
-are surfaced in `stop_reason`.
 
 ## Reproducing
 

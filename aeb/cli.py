@@ -41,11 +41,8 @@ def cmd_run(a):
     if a.tasks:
         mods = [m for m in mods if m.TASK["id"] in a.tasks]
     results = []
-    extra_body = None
-    if a.extra_body:
-        import json as _json
-        extra_body = _json.loads(a.extra_body)
     print(f"# Agentic Execution Bench | model={a.model} | tasks={[m.TASK['id'] for m in mods]} | trials={a.trials}\n")
+    extra_body = json.loads(a.extra_body) if a.extra_body else None
     for m in mods:
         for t in range(a.trials):
             res = run_one(m, base_url=a.base_url, model=a.model, api_key=a.api_key,
