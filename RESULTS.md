@@ -21,6 +21,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | gemma4-26B-A4B | 10 | 7/7 = 1.00 (with the default scaffold) |
 | gemma-4-12B-it *(new, dense)* | 5 | 7/7 = 1.00 (struggles only on the path axis below) |
 | **DeepSeek V4 Flash FP8** *(TP=2, vLLM + MTP, 2× DGX Spark)* | 3 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery & path_handling_hard |
+| **DeepSeek-V4-Flash-DSpark** *(TP=2, vLLM + DSpark γ=5, 2× DGX Spark, 56-89 tok/s)* | 3 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery (11.3 turns) & path_handling_hard (7.7 turns). talk/do=0. |
 | **Qwen-AgentWorld-35B-A3B** *(BF16, vLLM, DGX Spark)* | 3 | 9/11 pass^k = 1.00; path_handling_hard 0.33, skill_discovery 0.33 (default scaffold) — see below |
 | **Ornith-1.0-35B-FP8** *(Spark4, single GB10, vLLM, Qwen3.5 MoE)* | 1 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery (14 turns) & path_handling_hard |
 
@@ -57,6 +58,7 @@ guess. Default scaffold, pass^k:
 | **Qwen3.6-27B dense** | **1.00** | 5 | local leader, Claude-class |
 | Qwen3.6-27B-MTP-pi-tune *(GGUF Q4_K_M, MTP draft)* | 0.53 | 15 | community MTP fine-tune + 4-bit quant of the 27B dense; default drops the dense's 1.00 to 0.53 (still above the 35B/122B MoEs). Capability-first scaffold recovers it to 0.93 — see ablation below |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | full agent-loop clear, ~9.3 turns |
+| **DeepSeek-V4-Flash-DSpark** *(TP=2, DSpark γ=5)* | **1.00** | 3 | full clear, ~11.3 turns |
 | **Ornith-1.0-35B-FP8** *(Spark4, single GB10)* | **1.00** | 1 | full clear, 14 turns. Qwen3.5 MoE dense enough to converge |
 | **gemma-4-12B-it** *(new, dense, "Unified")* | 0.27 | 15 | extremely high variance: 0.60 (n=5) collapsed to 0.27 at n=15 — see note below |
 | Albond Qwen3.5-122B-A10B | 0.40 | 5 | over-commits to solving itself |
@@ -214,6 +216,7 @@ Adding the two traps that actually bite turns Axis P back into a discriminator:
 | gemma4-26B-A4B | **0.80** | 5 | one trial **resolved `~` to `/work` instead of `$HOME`** and wrote the result to the wrong place |
 | **gemma-4-12B-it** *(new, dense)* | **0.40** | 5 | the path axis is this model's clear weakness (default scaffold: aces all 7 core tasks, but 0.40 here) — fixable with a scaffold, see below |
 | **DeepSeek V4 Flash FP8** *(TP=2)* | **1.00** | 3 | resolves `~`+CWD correctly (8.0 turns) |
+| **DeepSeek-V4-Flash-DSpark** *(TP=2, DSpark γ=5)* | **1.00** | 3 | resolves `~`+CWD correctly (7.7 turns) |
 | **Qwen-AgentWorld-35B-A3B** | 0.33 | 3 | 3B active: 1/3 trials; mis-resolves `~` under friction (13.7 turns avg) |
 | **Ornith-1.0-35B-FP8** *(Spark4, single GB10)* | **1.00** | 1 | resolves `~`+CWD correctly (6.0 turns) |
 
