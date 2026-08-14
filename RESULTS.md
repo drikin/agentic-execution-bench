@@ -24,6 +24,7 @@ Score = **pass^k** (passes *every* one of k trials) unless noted. Higher is bett
 | **DeepSeek-V4-Flash-DSpark** *(TP=2, vLLM + DSpark γ=5, 2× DGX Spark, 56-89 tok/s)* | 3 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery (11.3 turns) & path_handling_hard (7.7 turns). talk/do=0. |
 | **Qwen-AgentWorld-35B-A3B** *(BF16, vLLM, DGX Spark)* | 3 | 9/11 pass^k = 1.00; path_handling_hard 0.33, skill_discovery 0.33 (default scaffold) — see below |
 | **Ornith-1.0-35B-FP8** *(Spark4, single GB10, vLLM, Qwen3.5 MoE)* | 1 | **full clear — all 11 tasks pass^k = 1.00**, incl. skill_discovery (14 turns) & path_handling_hard |
+| **Qwen3.8-27B-NVFP4** *(Inferact quant, TP1, single GB10 spark1, vLLM+MTP k=3, ~13.7 tok/s)* | 1 | Score 0.82; 9/11 pass^k = 1.00 (incl. skill_discovery, url_path, path_handling); error_recovery 0.00 (no real error-then-recovery), path_handling_hard 0.00 |
 
 These tasks no longer discriminate among competent models — which is exactly why
 the harness-direction finding and the skill-discovery axis below matter.
